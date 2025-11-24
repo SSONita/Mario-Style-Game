@@ -2,8 +2,7 @@
 
 ## 📌 Project Overview
 This project is a 2D side-scrolling platformer inspired by classic Mario games.  
-Players can run, jump, collect coins, defeat enemies, and progress through multiple levels.  
-The game is built in **Unity 2021 LTS or newer** using the **2D Core template**.
+Players can run, jump, collect coins, defeat enemies, and progress through multiple levels. 
 
 ## 🧩 Core Features
 
