@@ -4,7 +4,7 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 5f;
+    [SerializeField] private float jumpForce = 20f;
     [SerializeField] private float groundDrag = 5f;
     [SerializeField] private float airDrag = 2f;
 
@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     private float horizontalInput;
     private float verticalVelocity;
     private bool facingRight = true;
+    private bool canDoubleJump;
 
     private void Start()
     {
@@ -55,7 +56,7 @@ public class PlayerController : MonoBehaviour
 
     private void CheckGrounded()
     {
-        Vector2 boxSize = new Vector2(0.7f, 0.1f);
+        Vector2 boxSize = new Vector2(0.9f, 1.4f);
         Vector2 boxPosition = (Vector2)transform.position - new Vector2(0, 0.3f);
 
         isGrounded = Physics2D.OverlapBox(boxPosition, boxSize, 0, Ground);
@@ -63,9 +64,16 @@ public class PlayerController : MonoBehaviour
 
     private void HandleJump()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            Jump();
+            if (isGrounded)
+            {
+                Jump();
+            }
+            else if (canDoubleJump)
+            {
+                DoubleJump();
+            }
         }
     }
 
@@ -75,26 +83,35 @@ public class PlayerController : MonoBehaviour
         rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 
+    private void DoubleJump()
+    {
+        rb.velocity = new Vector2(rb.velocity.x, 0);
+        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        canDoubleJump = false;
+    }
+
     private void UpdateAnimations()
     {
         if (animator == null) return;
 
-        animator.SetBool("isJumping", !isGrounded);
-        animator.SetBool("isFalling", rb.velocity.y < -0.1f && !isGrounded);
+        // Parameters you listed: Speed, isJumping, isFalling, isDoubleJumping
+        float speed = Mathf.Abs(rb.velocity.x);
+        bool isJumping = !isGrounded && rb.velocity.y > 0.1f;
+        bool isFalling = !isGrounded && rb.velocity.y < -0.1f;
+        bool isDoubleJumping = !isGrounded && !canDoubleJump && rb.velocity.y > 0.1f;
+
+        animator.SetFloat("Speed", speed);
+        animator.SetBool("isJumping", isJumping);
+        animator.SetBool("isFalling", isFalling);
+        animator.SetBool("isDoubleJumping", isDoubleJumping);
 
         if (horizontalInput > 0.1f)
         {
-            animator.SetFloat("Speed", 1f);
             if (!facingRight) Flip();
         }
         else if (horizontalInput < -0.1f)
         {
-            animator.SetFloat("Speed", 1f);
             if (facingRight) Flip();
-        }
-        else
-        {
-            animator.SetFloat("Speed", 0f);
         }
     }
 
@@ -110,7 +127,18 @@ public class PlayerController : MonoBehaviour
     {
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.RespawnPlayer();
+            GameManager.Instance.RespawnPlayer(); // no arguments
         }
     }
+//     private void OnDrawGizmos()
+// {
+//     // Match the same values you use in CheckGrounded()
+//     Vector2 boxSize = new Vector2(0.9f, 1.4f);
+//     Vector2 boxPosition = (Vector2)transform.position - new Vector2(0, 0.3f);
+
+//     Gizmos.color = Color.red;
+//     Gizmos.DrawWireCube(boxPosition, boxSize);
+// }
 }
+
+

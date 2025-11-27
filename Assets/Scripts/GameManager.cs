@@ -1,158 +1,84 @@
 using UnityEngine;
-using TMPro;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
+    public static GameManager Instance;
 
-    [Header("Scoring")]
-    [SerializeField] private int fruitScore = 0;
-    [SerializeField] private int timeBonus = 0;
+    public int hearts = 3;
+    public int score = 0;
+    public float timeRemaining = 60f;
+    public bool isGameOver = false;
 
-    [Header("Timer")]
-    [SerializeField] private float levelTime = 0f;
-    [SerializeField] private bool timerRunning = false;
+    public Transform respawnPoint;
+    private GameObject player;
 
-    [Header("UI References")]
-    [SerializeField] private TextMeshProUGUI scoreText;
-    [SerializeField] private TextMeshProUGUI timerText;
-    [SerializeField] private TextMeshProUGUI finalScoreText;
-    [SerializeField] private GameObject resultsPanel;
-
-    [Header("Respawn")]
-    [SerializeField] private Transform spawnPoint;
-    [SerializeField] private Transform playerTransform;
-
-    private Vector3 initialSpawnPosition;
-    private int finalScore = 0;
-
-    private void Awake()
+    void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
         {
-            Destroy(gameObject);
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
-            Instance = this;
+            Destroy(gameObject);
         }
     }
 
-    private void Start()
+    void Update()
     {
-        if (spawnPoint != null)
+        if (!isGameOver)
         {
-            initialSpawnPosition = spawnPoint.position;
-        }
-
-        if (playerTransform == null)
-        {
-            playerTransform = GameObject.FindGameObjectWithTag("Player")?.transform;
-        }
-
-        fruitScore = 0;
-        levelTime = 0f;
-        UpdateUI();
-    }
-
-    private void Update()
-    {
-        if (timerRunning)
-        {
-            levelTime += Time.deltaTime;
-            UpdateTimerUI();
+            timeRemaining -= Time.deltaTime;
+            if (timeRemaining <= 0)
+            {
+                isGameOver = true;
+                Debug.Log("Time's up! Player loses.");
+                SceneManager.LoadScene("GameEnd");
+            }
         }
     }
 
-    public void StartTimer()
+    public void RegisterPlayer(GameObject playerObj)
     {
-        timerRunning = true;
-    }
-
-    public void StopTimer()
-    {
-        timerRunning = false;
-    }
-
-    public void AddFruitScore(int amount)
-    {
-        fruitScore += amount;
-        UpdateUI();
-    }
-
-    public void CalculateFinalScore()
-    {
-        int timeBonusAmount = Mathf.Max(0, 1000 - Mathf.RoundToInt(levelTime * 10));
-        finalScore = fruitScore + timeBonusAmount;
-    }
-
-    public void FinishLevel()
-    {
-        StopTimer();
-        CalculateFinalScore();
-
-        if (finalScoreText != null)
-        {
-            finalScoreText.text = $"Final Score: {finalScore}";
-        }
+        player = playerObj;
     }
 
     public void RespawnPlayer()
     {
-        if (playerTransform != null && spawnPoint != null)
+        hearts--;
+        Debug.Log("Heart lost! Hearts left: " + hearts);
+
+        if (hearts <= 0)
         {
-            playerTransform.position = initialSpawnPosition;
+            isGameOver = true;
+            Debug.Log("Game Over! Loading Restart scene...");
+            SceneManager.LoadScene("GameEnd");
+            // Game over logic
+        }
+        else if (player != null && respawnPoint != null)
+        {
+            player.transform.position = respawnPoint.position;
         }
     }
 
-    public void RestartLevel()
+    // private void TriggerGameOver()
+    // {
+    //     isGameOver = true;
+    //     Debug.Log("Game Over! Loading Restart scene...");
+    //     SceneManager.LoadScene("Restart");
+    // }
+
+    public void AddFruitScore(int amount)
     {
-        fruitScore = 0;
-        levelTime = 0f;
-        timerRunning = false;
-        Time.timeScale = 1f;
-
-        if (resultsPanel != null)
-        {
-            resultsPanel.SetActive(false);
-        }
-
-        RespawnPlayer();
-        UpdateUI();
+        score += amount;
+        Debug.Log("Score: " + score);
     }
 
-    public void GoToNextLevel(string levelName)
+    public void FinishLevel()
     {
-        Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(levelName);
-    }
-
-    private void UpdateUI()
-    {
-        if (scoreText != null)
-        {
-            scoreText.text = $"Score: {fruitScore}";
-        }
-        UpdateTimerUI();
-    }
-
-    private void UpdateTimerUI()
-    {
-        if (timerText != null)
-        {
-            int minutes = Mathf.FloorToInt(levelTime / 60f);
-            int seconds = Mathf.FloorToInt(levelTime % 60f);
-            timerText.text = $"Time: {minutes:00}:{seconds:00}";
-        }
-    }
-
-    public int GetFinalScore()
-    {
-        return finalScore;
-    }
-
-    public float GetLevelTime()
-    {
-        return levelTime;
+        Debug.Log("Level Complete!");
+        SceneManager.LoadScene("Victory");
     }
 }
